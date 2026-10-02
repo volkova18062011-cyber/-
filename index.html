@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Кто это сказал? — квиз об образовании</title>
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --card: #ffffff;
+    --accent: #3a5a40;
+    --accent-light: #e6efe6;
+    --error: #b0413e;
+    --error-light: #f7e6e5;
+    --text: #2b2b2b;
+    --muted: #7a7a7a;
+    --border: #ddd6c9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 40px 20px;
+    font-family: "Georgia", "Times New Roman", serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: normal;
+    text-align: center;
+    margin: 0 0 6px;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 28px;
+  }
+
+  .progress {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .bar > div {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.3s;
+  }
+
+  .quote {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 22px 24px;
+    font-style: italic;
+    font-size: 1.05rem;
+    margin-bottom: 20px;
+    min-height: 110px;
+  }
+
+  .options {
+    display: grid;
+    gap: 10px;
+  }
+
+  .opt {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 18px;
+    font-family: inherit;
+    font-size: 0.98rem;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  }
+
+  .opt:hover:not(:disabled) {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  .opt:disabled { cursor: default; }
+
+  .opt.correct {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    font-weight: bold;
+  }
+
+  .opt.wrong {
+    border-color: var(--error);
+    background: var(--error-light);
+  }
+
+  .feedback {
+    margin-top: 16px;
+    font-size: 0.9rem;
+    min-height: 24px;
+  }
+
+  .feedback.ok { color: var(--accent); }
+  .feedback.no { color: var(--error); }
+  .feedback .src {
+    display: block;
+    color: var(--muted);
+    font-size: 0.82rem;
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  .next {
+    display: none;
+    margin-top: 20px;
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .next:hover { opacity: 0.9; }
+  .next.show { display: block; }
+
+  .result {
+    text-align: center;
+    padding: 32px 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  .result .emoji { font-size: 2.6rem; }
+  .result .msg { font-size: 1.15rem; margin: 10px 0; }
+  .result .score { font-size: 2rem; color: var(--accent); }
+  .result .total { color: var(--muted); font-size: 0.9rem; }
+
+  .restart {
+    margin-top: 20px;
+    padding: 10px 26px;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+
+  .restart:hover {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  @media (max-width: 500px) {
+    body { padding: 20px 14px; }
+    h1 { font-size: 1.25rem; }
+    .quote { font-size: 0.98rem; padding: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Кто это сказал?</h1>
+  <p class="subtitle">Цитаты об образовании и их авторы</p>
+
+  <div id="app"></div>
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    quote: "«Истинное образование — это своего рода бесконечная история: дело постоянных начинаний, привычных новых стартов, постоянной новизны»",
+    author: "Дж. Р. Р. Толкин",
+    source: "Tolkien, J. R. R. (1959). Farewell address to the University of Oxford."
+  },
+  {
+    quote: "«Образование может быть получено самым нерегулярным образом — у домашнего очага или в поле, на берегу моря или в лесу. Его можно приобрести из старых потрёпанных книг или непосредственно из природы»",
+    author: "Эллен Кей",
+    source: "Key, E. (1900). The Century of the Child, Chapter VI."
+  },
+  {
+    quote: "«Учитель должен понимать и ощущать своё положение наблюдателя: активность должна принадлежать самому явлению»",
+    author: "Мария Монтессори",
+    source: "Montessori, M. (1949). The Discovery of the Child."
+  },
+  {
+    quote: "«В воспитании нет ничего ничтожного; все, по-видимому, незначительные поступки (и со стороны учащих, и со стороны учащихся) требуют строгого и здравого обсуждения»",
+    author: "Н. И. Пирогов",
+    source: "Избранные педагогические сочинения, 2020, Т. 9, С. 54."
+  },
+  {
+    quote: "«В деле воспитания и образования насилие, во-первых, невозможно, во-вторых, не приводит ни к каким результатам, или к печальным»",
+    author: "Л. Н. Толстой",
+    source: "Толстой, Л. Н. (1862). Воспитание и образование. Ясная Поляна, (7)."
+  },
+  {
+    quote: "«Высшее образование — то, что не просто сообщает сведения, но приводит нашу жизнь в гармонию со всем существующим»",
+    author: "Рабиндранат Тагор",
+    source: "Tagore, R. (1933). My school. In Personality. Macmillan."
+  },
+  {
+    quote: "А: «А вы учились этому? Чтобы быть поэтом? Не пытались кончить вуз, где готовят, где учат.» Б: «Я не думал, что это даётся образованием». А: «А чем же?» Б: «Я думаю, это… от Бога».",
+    author: "И. А. Бродский",
+    source: "Вигдорова Ф. Судилище // Дорога в жизнь ; Это мой дом ; Черниговка. — М. : Художественная литература, 1990."
+  }
+];
+
+const ALL_AUTHORS = [...new Set(QUESTIONS.map(q => q.author))];
+
+let state = {};
+
+function shuffle(a) {
+  const arr = a.slice();
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function start() {
+  state = {
+    order: shuffle(QUESTIONS),
+    index: 0,
+    score: 0,
+    answered: false
+  };
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const app = document.getElementById('app');
+  const q = state.order[state.index];
+  const total = state.order.length;
+  const n = state.index + 1;
+
+  // Варианты: правильный + 3 случайных неправильных
+  const wrong = ALL_AUTHORS.filter(a => a !== q.author);
+  const options = shuffle(shuffle(wrong).slice(0, 3).concat([q.author]));
+
+  app.innerHTML = `
+    <div class="progress">
+      <span>Вопрос ${n} из ${total}</span>
+      <span>Правильно: ${state.score}</span>
+    </div>
+    <div class="bar"><div style="width:${(state.index / total) * 100}%"></div></div>
+    <div class="quote">${q.quote}</div>
+    <div class="options" id="opts">
+      ${options.map(a => `<button class="opt" data-author="${a.replace(/"/g, '&quot;')}">${a}</button>`).join('')}
+    </div>
+    <div class="feedback" id="fb"></div>
+    <button class="next" id="next">${n === total ? 'Показать результат →' : 'Следующий вопрос →'}</button>
+  `;
+
+  state.answered = false;
+
+  document.querySelectorAll('.opt').forEach(btn => {
+    btn.addEventListener('click', () => handleAnswer(btn, q));
+  });
+
+  document.getElementById('next').addEventListener('click', nextQuestion);
+}
+
+function handleAnswer(btn, q) {
+  if (state.answered) return;
+  state.answered = true;
+
+  const chosen = btn.dataset.author;
+  const correct = chosen === q.author;
+
+  document.querySelectorAll('.opt').forEach(b => {
+    b.disabled = true;
+    if (b.dataset.author === q.author) b.classList.add('correct');
+    else if (b === btn && !correct) b.classList.add('wrong');
+  });
+
+  const fb = document.getElementById('fb');
+  if (correct) {
+    state.score++;
+    fb.className = 'feedback ok';
+    fb.innerHTML = `✅ Верно!<span class="src">${q.source}</span>`;
+  } else {
+    fb.className = 'feedback no';
+    fb.innerHTML = `❌ Неверно. Правильный ответ: <b>${q.author}</b>.<span class="src">${q.source}</span>`;
+  }
+
+  const nextBtn = document.getElementById('next');
+  nextBtn.classList.add('show');
+}
+
+function nextQuestion() {
+  state.index++;
+  if (state.index < state.order.length) {
+    renderQuestion();
+  } else {
+    renderResult();
+  }
+}
+
+function renderResult() {
+  const app = document.getElementById('app');
+  const total = state.order.length;
+  const pct = Math.round((state.score / total) * 100);
+
+  let emoji, msg;
+  if (pct === 100)      { emoji = '🏆'; msg = 'Блестяще!'; }
+  else if (pct >= 70)   { emoji = '👍'; msg = 'Хороший результат.'; }
+  else if (pct >= 40)   { emoji = '📖'; msg = 'Есть куда расти.'; }
+  else                  { emoji = '🌱'; msg = 'Попробуйте ещё раз.'; }
+
+  app.innerHTML = `
+    <div class="result">
+      <div class="emoji">${emoji}</div>
+      <div class="msg">${msg}</div>
+      <div class="score">${state.score} / ${total}</div>
+      <div class="total">правильных ответов</div>
+      <button class="restart" id="restart">Пройти заново</button>
+    </div>
+  `;
+  document.getElementById('restart').addEventListener('click', start);
+}
+
+start();
+</script>
+</body>
+</html>
